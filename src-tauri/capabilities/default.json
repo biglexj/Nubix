@@ -1,0 +1,18 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "default",
+  "description": "Capability for the main window",
+  "windows": ["main"],
+  "permissions": [
+    "core:default",
+    "dialog:allow-open",
+    {
+      "identifier": "opener:allow-open-url",
+      "allow": [
+        { "url": "https://console.cloud.google.com/*" },
+        { "url": "https://rclone.org/drive/*" },
+        { "url": "https://myaccount.google.com/connections*" }
+      ]
+    }
+  ]
+}

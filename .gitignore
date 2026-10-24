@@ -1,0 +1,44 @@
+# Dependencies
+node_modules/
+
+# Build and release outputs
+dist/
+dist-ssr/
+build/
+release/
+src-tauri/target/
+
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# OS & Editor
+.DS_Store
+Thumbs.db
+.vscode/*
+!.vscode/extensions.json
+.idea
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# Local secrets & configs
+*.local
+*.conf
+client_secret*.json
+credentials*.json
+
+# Windows shortcuts & executables
+*.lnk
+*.exe
+*.msi
+
+# Work / scratch
+work/
