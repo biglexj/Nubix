@@ -67,6 +67,24 @@ La espera debe contar desde la primera detección válida y guardar un registro 
 
 Para abrir la aplicación ya compilada en Windows, usa `Nubix.lnk` en la carpeta del proyecto. El ejecutable autónomo incluye la interfaz y no necesita Vite ni una terminal abierta; requiere Rclone instalado en PATH. La configuración y el avance se guardan fuera del proyecto.
 
+### Operación con Mise (Estándar Ecosistema)
+
+Nubix implementa la interfaz universal de tareas mediante Mise:
+
+| Tarea | Propósito |
+|---|---|
+| `mise dev` | Iniciar entorno de desarrollo (`tauri dev`). |
+| `mise build` | Compilar frontend y binario de escritorio sin generar instaladores. |
+| `mise release` | Generar instalador oficial Inno Setup en `release/` sin publicar. |
+| `mise publish` | Publicar en GitHub Releases y sincronizar ficha en Aurora (`--plan` y `--check` sin escritura). |
+
+Opciones de inspección y comprobación:
+- `--plan`: Muestra el comando y las operaciones planificadas sin ejecutar procesos ni modificar el sistema (`mise dev --plan`, `mise release --plan`, `mise publish --plan`).
+- `--check`: (para `publish`) Verifica el estado del repositorio, tags, notas y la presencia e integridad del instalador en `release/` sin publicar nada (`mise publish --check`).
+- Canal explícito `github`: `mise publish github` (omite la sincronización con la web de Aurora).
+
+### Comandos directos y comprobaciones
+
 ```powershell
 npm install
 npm run tauri dev
