@@ -1,0 +1,32 @@
+# Configuración de tareas de Nubix mediante Mise
+# Reutiliza el estándar común: dev, build, release, publish
+
+[tasks.dev]
+raw_args = true
+description = "Ejecutar Nubix en desarrollo (Tauri v2 + Vite)"
+file = "scripts/mise-task.ts"
+
+[tasks.build]
+raw_args = true
+description = "Compilar frontend y binario de escritorio sin generar instalador"
+file = "scripts/mise-task.ts"
+
+[tasks.check]
+raw_args = true
+description = "Verificar tipos del frontend y compilar el backend Rust sin emitir artefactos"
+file = "scripts/mise-task.ts"
+
+[tasks.test]
+raw_args = true
+description = "Ejecutar las pruebas unitarias del backend Rust"
+file = "scripts/mise-task.ts"
+
+[tasks.release]
+raw_args = true
+description = "Generar instalador oficial Inno Setup en release/ sin publicar"
+file = "scripts/mise-task.ts"
+
+[tasks.publish]
+raw_args = true
+description = "Publicar release en GitHub y sincronizar ficha en Aurora (--plan y --check sin escritura)"
+file = "scripts/mise-task.ts"
