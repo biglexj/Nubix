@@ -85,11 +85,11 @@ spanish.ClickFinish=Pulsa Finalizar para cerrar el instalador.
 spanish.RunApp=Ejecutar {#MyAppName}
 
 [Files]
+; Extraído explícitamente por la UI; al principio para evitar descomprimir payload solid.
+Source: "{#MyAppIcon}"; Flags: dontcopy
 ; El ejecutable y sus recursos los deja preparados Build-Installer.ps1 en
 ; build\inno-staging\app.
 Source: "..\..\build\inno-staging\app\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
-; Icono extraido explicitamente por la UI; no se instala en la carpeta temporal.
-Source: "{#MyAppIcon}"; Flags: dontcopy
 
 [Icons]
 Name: "{autoprograms}\{#MyAppName}"; Filename: "{app}\{#MyAppExe}"; WorkingDir: "{app}"

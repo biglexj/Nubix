@@ -8,15 +8,21 @@ $ErrorActionPreference = 'Stop'
 #
 # Ejecutar despues de `npm run icons:generate`, cuando cambie la fuente canonica.
 
+# Las rutas se resuelven de forma relativa a este script y a la raiz del workspace:
+# no hay rutas absolutas al disco local.
+$repoRoot = Split-Path -Parent (Split-Path -Parent $PSScriptRoot)
+$workspaceRoot = Split-Path -Parent $repoRoot
+
 # Fuente canonica de Nubix (repo) y original externo (biblioteca).
-$repoTransparent = 'D:/Proyectos/biglexj/Nubix/assets/branding/icons/icon-transparent.png'
+$repoTransparent = Join-Path $repoRoot 'assets/branding/icons/icon-transparent.png'
 $libraryBrand = 'D:/Imágenes/03_Proyectos/02_Development/Icons/Applications/Nubix/Nubix.webp'
 
 # Prisma: catalogo de apps del ecosistema (assets = fuente, public = servido).
-foreach ($dir in @(
-    'D:/Proyectos/biglexj/Prisma/assets/icons/nubix',
-    'D:/Proyectos/biglexj/Prisma/public/icons/nubix'
-)) {
+$prismaDirs = @(
+    (Join-Path $workspaceRoot 'Prisma/assets/icons/nubix'),
+    (Join-Path $workspaceRoot 'Prisma/public/icons/nubix')
+)
+foreach ($dir in $prismaDirs) {
     New-Item -ItemType Directory -Force -Path $dir | Out-Null
     & magick $libraryBrand -resize 1024x1024 "$dir/icon.png"
     & magick $libraryBrand -quality 92 "$dir/icon.webp"
@@ -25,17 +31,18 @@ foreach ($dir in @(
 }
 
 # Aurora Synapse: catalogo del launchpad.
-$asDir = 'D:/Proyectos/biglexj/Aurora-Synapse/public/assets/icons/nubix'
+$asDir = Join-Path $workspaceRoot 'Aurora-Synapse/public/assets/icons/nubix'
+$repoIcon128 = Join-Path $repoRoot 'src-tauri/icons/128x128.png'
 New-Item -ItemType Directory -Force -Path $asDir | Out-Null
 # El script sync-icons.ps1 usa el 128x128 nativo del repo para icon.webp / icon.png.
-& magick 'D:/Proyectos/biglexj/Nubix/src-tauri/icons/128x128.png' -quality 92 "$asDir/icon.webp"
-Copy-Item 'D:/Proyectos/biglexj/Nubix/src-tauri/icons/128x128.png' "$asDir/icon.png" -Force
+& magick $repoIcon128 -quality 92 "$asDir/icon.webp"
+Copy-Item $repoIcon128 "$asDir/icon.png" -Force
 # Variante transparente (mismo criterio que prisma-upscaler).
 & magick $repoTransparent -quality 92 "$asDir/icon-transparent.webp"
 
 Write-Output '--- Prisma assets/icons/nubix ---'
-Get-ChildItem 'D:/Proyectos/biglexj/Prisma/assets/icons/nubix' | Select-Object Name, Length | Format-Table -AutoSize
+Get-ChildItem $prismaDirs[0] | Select-Object Name, Length | Format-Table -AutoSize
 Write-Output '--- Prisma public/icons/nubix ---'
-Get-ChildItem 'D:/Proyectos/biglexj/Prisma/public/icons/nubix' | Select-Object Name, Length | Format-Table -AutoSize
+Get-ChildItem $prismaDirs[1] | Select-Object Name, Length | Format-Table -AutoSize
 Write-Output '--- Aurora Synapse public/assets/icons/nubix ---'
 Get-ChildItem $asDir | Select-Object Name, Length | Format-Table -AutoSize

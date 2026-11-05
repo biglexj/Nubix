@@ -352,4 +352,15 @@ if (-not (Test-Path -LiteralPath $installer)) {
 }
 
 Write-Host "[5/5] Instalador generado: $installer ($([math]::Round((Get-Item -LiteralPath $installer).Length / 1MB, 2)) MB)" -ForegroundColor Green
+
+# Sincronizar copia en '12. Releases'
+$releasesGlobalDir = 'D:\Proyectos\biglexj\12. Releases'
+if (Test-Path -LiteralPath $releasesGlobalDir) {
+    $installerLeaf = Split-Path $installer -Leaf
+    Get-ChildItem -LiteralPath $releasesGlobalDir -Filter "Nubix-Setup-*.exe" -File |
+        Where-Object { $_.Name -ne $installerLeaf } |
+        ForEach-Object { Remove-Item -LiteralPath $_.FullName -Force -ErrorAction SilentlyContinue }
+    Copy-Item -LiteralPath $installer -Destination (Join-Path $releasesGlobalDir $installerLeaf) -Force
+    Write-Host "Copia sincronizada en 12. Releases\$installerLeaf" -ForegroundColor Green
+}
 Write-Output $installer

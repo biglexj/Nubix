@@ -11,6 +11,16 @@ raw_args = true
 description = "Compilar frontend y binario de escritorio sin generar instalador"
 file = "scripts/mise-task.ts"
 
+[tasks.check]
+raw_args = true
+description = "Verificar tipos del frontend y compilar el backend Rust sin emitir artefactos"
+file = "scripts/mise-task.ts"
+
+[tasks.test]
+raw_args = true
+description = "Ejecutar las pruebas unitarias del backend Rust"
+file = "scripts/mise-task.ts"
+
 [tasks.release]
 raw_args = true
 description = "Generar instalador oficial Inno Setup en release/ sin publicar"

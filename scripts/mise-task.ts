@@ -28,9 +28,11 @@ const appVersion = pkg.version;
 const appName = "Nubix";
 const repository = "biglexj/Nubix";
 
-const help = `Nubix: mise <dev|build|release|publish> [opciones]
+const help = `Nubix: mise <dev|build|check|test|release|publish> [opciones]
   dev      Ejecutar en modo desarrollo (Tauri v2 + Vite).
   build    Compilar frontend y binario de escritorio sin generar instalador.
+  check    Verificar tipos del frontend (tsc --noEmit) y compilar el backend Rust.
+  test     Ejecutar las pruebas unitarias del backend Rust.
   release  Generar instalador oficial Inno Setup en release/.
   publish  [github|all] Publicar en GitHub y sincronizar ficha en Aurora.
   --plan   Mostrar los comandos o el plan sin ejecutar acciones ni escribir.
@@ -40,6 +42,8 @@ Ejemplos:
   mise dev
   mise dev --plan
   mise build --plan
+  mise check --plan
+  mise test --plan
   mise release --plan
   mise publish --plan
   mise publish github --plan
@@ -169,6 +173,40 @@ export async function main(args = Bun.argv.slice(2)): Promise<number> {
         console.log("==> [2/2] Compilando binario de escritorio Tauri v2 (--no-bundle)...");
         const child = Bun.spawn(cmdDesktop, { cwd: root, stdin: "inherit", stdout: "inherit", stderr: "inherit" });
         return (await child.exited) ?? 0;
+    }
+
+    if (action === "check") {
+        const cmdFrontend = ["bun", "run", "tsc", "--noEmit"];
+        const cmdBackend = ["cargo", "check", "--manifest-path", "src-tauri/Cargo.toml"];
+        console.log(`check ${appName}\nDirectorio: ${root}\nComando: ${cmdFrontend.join(" ")} && ${cmdBackend.join(" ")}`);
+        if (isPlan) return 0;
+
+        console.log("\n==> [1/2] Verificando tipos del frontend (tsc --noEmit)...");
+        const resFe = runCmdSync(cmdFrontend);
+        if (resFe.code !== 0) {
+            console.error(resFe.stderr || resFe.stdout);
+            throw new Error(`Fallo en la verificación de tipos del frontend (código ${resFe.code})`);
+        }
+        console.log("==> [2/2] Compilando el backend Rust (cargo check)...");
+        const resBe = runCmdSync(cmdBackend);
+        if (resBe.code !== 0) {
+            console.error(resBe.stderr || resBe.stdout);
+            throw new Error(`Fallo en la verificación del backend Rust (código ${resBe.code})`);
+        }
+        return 0;
+    }
+
+    if (action === "test") {
+        const cmd = ["cargo", "test", "--manifest-path", "src-tauri/Cargo.toml"];
+        console.log(`test ${appName}\nDirectorio: ${root}\nComando: ${cmd.join(" ")}`);
+        if (isPlan) return 0;
+
+        const res = runCmdSync(cmd);
+        if (res.code !== 0) {
+            console.error(res.stderr || res.stdout);
+            throw new Error(`Fallaron las pruebas unitarias del backend Rust (código ${res.code})`);
+        }
+        return 0;
     }
 
     if (action === "release") {
