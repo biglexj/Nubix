@@ -3,6 +3,8 @@ use std::sync::Arc;
 use tauri::{Emitter, Manager};
 mod cloud;
 mod preferences;
+mod settings;
+mod tray;
 
 #[tauri::command]
 async fn preferences_load(app: tauri::AppHandle) -> Result<Option<serde_json::Value>, String> {
@@ -15,6 +17,19 @@ async fn preferences_save(app: tauri::AppHandle, folders: serde_json::Value) -> 
 #[tauri::command]
 async fn job_status(app: tauri::AppHandle) -> Result<Option<preferences::Job>, String> {
     blocking(move || preferences::job(&app)).await
+}
+
+#[tauri::command]
+async fn settings_load(app: tauri::AppHandle) -> Result<settings::AppSettings, String> {
+    blocking(move || Ok(settings::load_settings(&app))).await
+}
+
+#[tauri::command]
+async fn settings_save(
+    app: tauri::AppHandle,
+    settings: settings::AppSettings,
+) -> Result<(), String> {
+    blocking(move || settings::save_settings(&app, &settings)).await
 }
 
 async fn blocking<T: Send + 'static>(
@@ -130,14 +145,40 @@ async fn rclone_version() -> Result<String, String> {
 pub fn run() {
     tauri::Builder::default()
         .manage(Arc::new(cloud::CloudRuntime::default()))
+        .plugin(tauri_plugin_single_instance::init(|app, args, _cwd| {
+            let is_silent = args
+                .iter()
+                .any(|arg| arg == "--autostart" || arg == "-autostart");
+            if !is_silent {
+                tray::show_main_window(app);
+            }
+        }))
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_opener::init())
+        .setup(|app| {
+            let _ = tray::setup_tray(app.handle());
+            let is_autostart =
+                std::env::args().any(|arg| arg == "--autostart" || arg == "-autostart");
+            if let Some(window) = app.get_webview_window("main") {
+                let _ = window.center();
+                if is_autostart {
+                    let _ = window.hide();
+                }
+            }
+            Ok(())
+        })
         .on_window_event(|window, event| {
             if let tauri::WindowEvent::CloseRequested { api, .. } = event {
                 let state = window.state::<Arc<cloud::CloudRuntime>>();
                 if cloud::is_busy(&state) {
                     api.prevent_close();
                     let _ = window.emit("operation-close-blocked", ());
+                    return;
+                }
+                let s = settings::load_settings(window.app_handle());
+                if s.close_to_tray {
+                    api.prevent_close();
+                    let _ = window.hide();
                 }
             }
         })
@@ -154,7 +195,9 @@ pub fn run() {
             cloud_upload,
             preferences_load,
             preferences_save,
-            job_status
+            job_status,
+            settings_load,
+            settings_save
         ])
         .run(tauri::generate_context!())
         .expect("No se pudo iniciar Nubix");

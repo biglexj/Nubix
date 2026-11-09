@@ -1,3 +1,6 @@
+html {
+  color-scheme: dark;
+}
 :root {
   font-family: "Segoe UI", system-ui, sans-serif;
   color: #e8edee;
@@ -7,9 +10,32 @@
   color-scheme: dark;
   --accent: #00c9b9;
   --muted: #859297;
+  --scrollbar-thumb: rgba(255, 255, 255, 0.18);
+  --scrollbar-thumb-hover: rgba(0, 201, 185, 0.55);
+  --scrollbar-track: transparent;
 }
 * {
   box-sizing: border-box;
+  scrollbar-width: thin;
+  scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
+}
+
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: var(--scrollbar-track);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--scrollbar-thumb);
+  border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--scrollbar-thumb-hover);
+}
+::-webkit-scrollbar-corner {
+  background: transparent;
 }
 body {
   margin: 0;
@@ -83,6 +109,11 @@ header {
   font-size: 11px;
   margin-top: 3px;
 }
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
 .preview {
   font-size: 9px;
   letter-spacing: 1.4px;
@@ -90,6 +121,24 @@ header {
   border: 1px solid #28343a;
   border-radius: 5px;
   padding: 5px 7px;
+}
+.icon-gear {
+  background: transparent;
+  border: 1px solid #28343a;
+  border-radius: 6px;
+  color: #7f9299;
+  width: 28px;
+  height: 28px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  transition: color 0.15s ease, border-color 0.15s ease, background-color 0.15s ease;
+}
+.icon-gear:hover {
+  color: var(--accent);
+  border-color: #00c9b9;
+  background-color: rgba(0, 201, 185, 0.08);
 }
 main {
   padding: 20px 26px 12px;
@@ -309,12 +358,18 @@ dialog {
   border-radius: 14px;
   background: #141c21;
   color: #e8edee;
-  width: min(480px, calc(100vw - 32px));
+  width: min(560px, calc(100vw - 32px));
   max-height: 90vh;
+  overflow-y: auto;
+}
+dialog:modal {
+  overscroll-behavior: contain;
 }
 dialog::backdrop {
   background: #000a;
   backdrop-filter: blur(4px);
+  overflow: hidden;
+  overscroll-behavior: contain;
 }
 .dialog-title {
   display: flex;
@@ -339,7 +394,7 @@ label {
   margin-bottom: 13px;
 }
 input:not([type="checkbox"]),
-select {
+textarea {
   display: block;
   width: 100%;
   margin-top: 6px;
@@ -349,6 +404,145 @@ select {
   color: #e0e9eb;
   background: #0f161b;
   font-size: 12px;
+}
+select,
+select::picker(select) {
+  appearance: base-select;
+}
+select {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  height: 38px;
+  min-height: 38px;
+  margin-top: 6px;
+  padding: 0 10px;
+  border: 1px solid #32424a;
+  border-radius: 7px;
+  color: #e0e9eb;
+  background: #0f161b;
+  font-size: 12px;
+  cursor: pointer;
+  color-scheme: dark;
+  box-sizing: border-box;
+}
+select:focus-visible {
+  border-color: var(--accent);
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(0, 201, 185, 0.25);
+}
+select::picker(select) {
+  background-color: #141c21;
+  border: 1px solid #32424a;
+  border-radius: 8px;
+  padding: 4px;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.7);
+  color: #e8edee;
+}
+select::picker-icon {
+  color: var(--accent);
+  margin-left: auto;
+  align-self: center;
+  font-size: 10px;
+  display: inline-flex;
+  align-items: center;
+}
+select option::checkmark {
+  color: var(--accent);
+}
+select option,
+select optgroup {
+  background-color: #141c21;
+  color: #e8edee;
+  padding: 8px 10px;
+  border-radius: 5px;
+  cursor: pointer;
+}
+select option:hover,
+select option:focus {
+  background-color: #1c272e;
+  color: #ffffff;
+}
+select option:checked {
+  background-color: #003a37;
+  color: var(--accent);
+  font-weight: 600;
+}
+.account-select-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+.account-select-row select {
+  flex: 1;
+}
+.account-select-row button {
+  margin-top: 6px;
+  white-space: nowrap;
+  padding: 8px 12px;
+}
+.settings-section {
+  background: #0f161b;
+  border: 1px solid #233037;
+  border-radius: 9px;
+  padding: 14px 16px;
+  margin-bottom: 14px;
+}
+.settings-section h3 {
+  margin: 0 0 10px 0;
+  font-size: 13px;
+  color: #e8edee;
+}
+.settings-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  margin-bottom: 12px;
+  cursor: pointer;
+}
+.settings-row:last-child {
+  margin-bottom: 0;
+}
+.settings-row input[type="checkbox"] {
+  margin-top: 2px;
+  accent-color: var(--accent);
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+.settings-copy strong {
+  display: block;
+  font-size: 12px;
+  color: #e0e9eb;
+  margin-bottom: 2px;
+}
+.settings-copy p {
+  margin: 0;
+  font-size: 11px;
+  color: var(--muted);
+  line-height: 1.4;
+}
+textarea {
+  resize: vertical;
+  min-height: 56px;
+  line-height: 1.45;
+  font-family: ui-monospace, "Cascadia Code", "Consolas", monospace;
+  font-size: 11.5px;
+}
+.field-hint {
+  display: block;
+  font-size: 10px;
+  color: var(--muted);
+  margin-top: 5px;
+  line-height: 1.4;
+}
+.field-hint code {
+  color: var(--accent);
+  background: rgba(0, 201, 185, 0.12);
+  padding: 1px 4px;
+  border-radius: 3px;
 }
 .input-row {
   display: flex;
@@ -532,6 +726,9 @@ footer {
 }
 .account select {
   max-width: 140px;
+  height: 32px;
+  min-height: 32px;
+  padding: 0 8px;
   margin: 0;
   font-size: 11px;
 }

@@ -20,6 +20,11 @@ export type Pair = {
   remote: string;
   accountId: string;
   rootId: string;
+  excludes?: string[];
+};
+export type AppSettings = {
+  close_to_tray: boolean;
+  autostart: boolean;
 };
 export type Job = {
   running: boolean;
@@ -61,4 +66,7 @@ export const api = {
     call<RemoteFolder[]>("cloud_folders", { accountId, rootId }),
   compare: (pair: Pair) => call<Comparison>("cloud_compare", { pair }),
   upload: (pair: Pair) => call<Comparison>("cloud_upload", { pair }),
+  loadSettings: () => call<AppSettings>("settings_load"),
+  saveSettings: (settings: AppSettings) =>
+    call<void>("settings_save", { settings }),
 };

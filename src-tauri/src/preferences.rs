@@ -51,6 +51,11 @@ fn validate(value: &Value) -> Result<(), String> {
         {
             return Err("Los ajustes de una carpeta no son válidos".into());
         }
+        for ex in &pair.excludes {
+            if ex.contains('\0') {
+                return Err("Una regla de exclusión no es válida".into());
+            }
+        }
     }
     Ok(())
 }

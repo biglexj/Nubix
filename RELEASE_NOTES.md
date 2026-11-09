@@ -2,6 +2,28 @@
 
 Registro de cambios y versiones de Nubix.
 
+## [0.2.1] - 2026-11-09
+
+### Resumen
+Versión que introduce el **Panel de Ajustes**, **Bandeja del Sistema (System Tray)** con opción de **minimizar al pulsar ✕**, **Inicio automático con Windows (Autorun)**, **Nubix Ignore** (lista negra de exclusión estilo `.gitignore`), selector desplegable (`<select>`) estilizado en tema oscuro, dimensiones optimizadas de ventana y modal, centrado automático y resolución del entorno de desarrollo.
+
+### Detalles
+- **Panel de Ajustes**: Nuevo acceso en la cabecera mediante icono de engranaje (⚙️) junto a la etiqueta del proveedor. Permite configurar el comportamiento de la ventana al cerrar, la activación de inicio automático con Windows y consultar detalles de versión y motor Rclone.
+- **Bandeja del Sistema (System Tray)**: Icono residente en el área de notificación de Windows con menú contextual («Abrir Nubix», «Ajustes…», «Salir de Nubix») y restauración rápida con clic izquierdo.
+- **Minimizar al pulsar ✕ (Close to Tray)**: Al cerrar la ventana principal mediante el botón ✕, Nubix se mantiene activo en segundo plano en la bandeja del sistema sin interrumpir tareas pendientes ni perder el estado.
+- **Inicio automático con Windows (Autorun)**: Configuración opcional mediante el registro del usuario (`HKCU\Software\Microsoft\Windows\CurrentVersion\Run`), iniciando en segundo plano de manera silenciosa en la bandeja.
+- **Selector desplegable estilizado en tema oscuro**: Se implementó la API estándar Customizable Select (`appearance: base-select`, `select::picker(select)` y estados de opción), sustituyendo el menú emergente nativo claro por un selector integrado con el fondo `#141c21` y acento `#00c9b9`, con maquetación flexible que asegura la flecha indicadora (`▼`) alineada en el extremo derecho sin saltos de línea.
+- **Protección de Instancia Única (Single-Instance Lock)**: Integración de `tauri-plugin-single-instance` para evitar bloqueos del directorio de datos de WebView2 (`0x800700AA`). Al abrir una segunda instancia, la invocación activa y enfoca la ventana existente desde la bandeja y termina limpiamente.
+- **Vinculación rápida en configuración de carpetas**: Cuando aún no hay cuentas conectadas en el equipo, el selector ofrece un botón directo («Conectar…») para abrir de inmediato el asistente de conexión sin confusiones.
+- **Nubix Ignore (Lista negra estilo .gitignore)**: Cada carpeta puede definir reglas de exclusión personalizadas directamente desde la ventana de configuración (ej. `node_modules/`, `target/`, `*.png`, `*.jpg`). Además, si existe un archivo `.nubixignore` en la raíz de la carpeta local, sus reglas se aplican automáticamente tanto en la fase de comparación (`compare` / `--dry-run`) como en la de subida (`upload`), omitiendo por completo carpetas completas, archivos y formatos no deseados.
+- **Ventana centrada y dimensiones ampliadas**: Se estableció el tamaño en 850 × 640 y centrado estricto al arrancar, ampliando también el ancho modal (560px) para evitar desplazamientos forzados.
+- **Scrollbar fina y estilizada global**: Se implementó una barra de desplazamiento delgada de 6px con extremos redondeados, pista transparente y acento interactivo sobre el tema oscuro en todo el entorno.
+- **Cierre por clic en espacio vacío (Light dismiss)**: La ventana modal se cierra al hacer clic sobre el fondo exterior (backdrop), garantizando la continuidad fluida de trabajo.
+- **Corrección del ciclo en `mise dev`**: Se reestructuraron los scripts en `package.json` y `tauri.conf.json` para que el levantador Vite inicie correctamente en `beforeDevCommand` y Tauri dev no se llame a sí mismo recursivamente.
+
+**Artefactos:**
+- `Nubix-Setup-0.2.1.exe` (3.988.346 B) — SHA256 `5d0133a63e47c500309e3c67a39220aae99cd35b493395a8ded6879d6d0d60de`
+
 ## [0.2.0] - 2026-10-22
 
 ### Resumen

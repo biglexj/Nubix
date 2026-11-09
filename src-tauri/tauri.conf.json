@@ -1,12 +1,12 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
   "productName": "Nubix",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "identifier": "com.biglexj.nubix",
   "build": {
-    "beforeDevCommand": "npm run dev",
+    "beforeDevCommand": "bun run dev",
     "devUrl": "http://localhost:1420",
-    "beforeBuildCommand": "npm run build",
+    "beforeBuildCommand": "bun run build",
     "frontendDist": "../dist"
   },
   "app": {
@@ -14,10 +14,11 @@
     "windows": [
       {
         "title": "Nubix",
-        "width": 800,
-        "height": 600,
+        "width": 850,
+        "height": 640,
         "minWidth": 560,
-        "minHeight": 560
+        "minHeight": 560,
+        "center": true
       }
     ],
     "security": {

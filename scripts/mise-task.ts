@@ -1,4 +1,5 @@
 #!/usr/bin/env bun
+import { publishRelease } from "../../Scripts/releases/aurora-publisher.ts";
 import { createHash } from "node:crypto";
 import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
 import { resolve, join } from "node:path";
@@ -144,9 +145,6 @@ export async function main(args = Bun.argv.slice(2)): Promise<number> {
         return 0;
     }
 
-    if (action === "publish") {
-        return handlePublish(rest);
-    }
 
     const isPlan = rest.includes("--plan");
 
@@ -210,15 +208,30 @@ export async function main(args = Bun.argv.slice(2)): Promise<number> {
     }
 
     if (action === "release") {
-        const psArgs = [
-            "powershell", "-NoProfile", "-ExecutionPolicy", "Bypass",
-            "-File", "./scripts/packaging/Build-Installer.ps1",
-        ];
+        const psArgs = ["powershell","-NoProfile","-ExecutionPolicy","Bypass","-File","./scripts/packaging/Build-Installer.ps1"];
         console.log(`release ${appName}\nDirectorio: ${root}\nComando: ${psArgs.join(" ")}`);
         if (isPlan) return 0;
 
         const child = Bun.spawn(psArgs, { cwd: root, stdin: "inherit", stdout: "inherit", stderr: "inherit" });
         return (await child.exited) ?? 0;
+    }
+
+    if (action === "publish") {
+        return publishRelease({
+            slug: "nubix",
+            appName: "Nubix",
+            repository: "biglexj/Nubix",
+            version: appVersion,
+            versionCode: 21,
+            projectRoot: root,
+            primaryAssetPattern: new RegExp(`^Nubix-Setup-${appVersion.replace(/\./g, "\\.")}\\.exe$`, "i"),
+            build: async (isPlan) => {
+                const psArgs = ["powershell","-NoProfile","-ExecutionPolicy","Bypass","-File","./scripts/packaging/Build-Installer.ps1"];
+                if (isPlan) return 0;
+                const child = Bun.spawn(psArgs, { cwd: root, stdin: "inherit", stdout: "inherit", stderr: "inherit" });
+                return (await child.exited) ?? 0;
+            }
+        }, rest);
     }
 
     throw new Error(`Acción desconocida: ${action}. Usa mise dev, mise build, mise release o mise publish.`);

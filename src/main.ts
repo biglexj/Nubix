@@ -2,7 +2,13 @@ import { open } from "@tauri-apps/plugin-dialog";
 import { openUrl } from "@tauri-apps/plugin-opener";
 import { invoke, isTauri } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
-import { api, type Account, type Comparison, type Pair } from "./cloud";
+import {
+  api,
+  type Account,
+  type AppSettings,
+  type Comparison,
+  type Pair,
+} from "./cloud";
 type Folder = Pair & {
   mode: "mirror" | "copy";
   days: number;
@@ -75,9 +81,31 @@ const cloud =
   '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M7 18a5 5 0 0 1-1-9.9A6.5 6.5 0 0 1 18.5 10a4 4 0 0 1-.5 8Z"/><path d="m9 13 3-3 3 3m-3-3v7"/></svg>';
 const folderIcon =
   '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 7a2 2 0 0 1 2-2h5l2 3h7a2 2 0 0 1 2 2v9H3Z"/></svg>';
+const gearIcon =
+  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:14px"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>';
 const dialog = () => document.querySelector<HTMLDialogElement>("#editor")!;
 dialog().addEventListener("cancel", (event) => {
   if (busy) event.preventDefault();
+});
+const isOutsideDialog = (e: PointerEvent, d: HTMLDialogElement) => {
+  const r = d.getBoundingClientRect();
+  return (
+    e.clientX < r.left ||
+    e.clientX > r.right ||
+    e.clientY < r.top ||
+    e.clientY > r.bottom
+  );
+};
+let pressedOutsideDialog = false;
+dialog().addEventListener("pointerdown", (e) => {
+  if (busy) return;
+  pressedOutsideDialog = isOutsideDialog(e, dialog());
+});
+dialog().addEventListener("pointerup", (e) => {
+  if (busy) return;
+  if (pressedOutsideDialog && isOutsideDialog(e, dialog())) {
+    dialog().close();
+  }
 });
 let timer: ReturnType<typeof setTimeout>;
 function notice(s: string) {
@@ -120,12 +148,15 @@ function render() {
   const current = account(selected) || accounts[0];
   if (current) selected = current.id;
   document.querySelector("#app")!.innerHTML =
-    `<header><div class="brand"><span class="brand-icon">${cloud}</span><div><strong>Nubix</strong><span>Tu biblioteca, contigo.</span></div></div><span class="preview">GOOGLE DRIVE</span></header><main>
+    `<header><div class="brand"><span class="brand-icon">${cloud}</span><div><strong>Nubix</strong><span>Tu biblioteca, contigo.</span></div></div><div class="header-actions"><span class="preview">GOOGLE DRIVE</span><button id="open-settings" class="icon-gear" aria-label="Ajustes" title="Ajustes">${gearIcon}</button></div></header><main>
  <section class="account"><div class="drive-icon">△</div><div class="account-copy"><strong>${current ? esc(current.name) : "Google Drive"}</strong><span>${current ? esc(current.email || "Conexión guardada · Google Drive") : "Conecta tu cuenta para comenzar"}</span></div>${accounts.length > 1 ? `<select id="active-account" aria-label="Cuenta activa">${accounts.map((a) => `<option value="${esc(a.id)}" ${a.id === selected ? "selected" : ""}>${esc(a.name)}</option>`).join("")}</select>` : ""}<button id="connect" class="secondary" ${busy ? "disabled" : ""}>${current ? "Cuentas" : "Conectar cuenta"}</button></section>
  <section class="section-heading"><h1>Carpetas</h1><button id="add" class="secondary" ${busy ? "disabled" : ""}>＋ Añadir carpeta</button></section>
- <section class="folder-list" aria-label="Carpetas configuradas">${folders.length ? folders.map((f) => `<article class="folder-row"><span class="folder-icon">${folderIcon}</span><div class="folder-copy"><strong>${esc(f.local.split(/[\\/]/).filter(Boolean).pop() || f.local)}</strong><span class="path" title="${esc(f.local)}">${esc(f.local)}</span><span class="destination" title="${esc(`${account(f.accountId)?.name || "Sin cuenta"} / ${f.rootLabel} / ${f.remote}`)}">↳ ${esc(f.rootLabel)} / ${esc(f.remote)}</span><div class="tags"><span>${f.mode === "mirror" ? "Espejo" : "Copia"} · PC → Drive</span><span>${f.keep ? "Conservar en Drive" : f.mode === "mirror" ? `Espera: ${f.days} días · pendiente` : "Sin eliminaciones"}</span></div></div><div class="folder-state"><span class="status" title="${esc(results.get(f.id)?.error || results.get(f.id)?.checked || "")}"><i></i>${esc(status(f))}</span><button class="settings" data-id="${esc(f.id)}" ${busy ? "disabled" : ""} aria-label="Configurar ${esc(f.local)}">Configurar ↗</button></div></article>`).join("") : '<div class="empty">Añade una carpeta para comenzar.</div>'}</section>
+ <section class="folder-list" aria-label="Carpetas configuradas">${folders.length ? folders.map((f) => `<article class="folder-row"><span class="folder-icon">${folderIcon}</span><div class="folder-copy"><strong>${esc(f.local.split(/[\\/]/).filter(Boolean).pop() || f.local)}</strong><span class="path" title="${esc(f.local)}">${esc(f.local)}</span><span class="destination" title="${esc(`${account(f.accountId)?.name || "Sin cuenta"} / ${f.rootLabel} / ${f.remote}`)}">↳ ${esc(f.rootLabel)} / ${esc(f.remote)}</span><div class="tags"><span>${f.mode === "mirror" ? "Espejo" : "Copia"} · PC → Drive</span><span>${f.keep ? "Conservar en Drive" : f.mode === "mirror" ? `Espera: ${f.days} días · pendiente` : "Sin eliminaciones"}</span>${f.excludes && f.excludes.length ? `<span title="${esc(f.excludes.join(', '))}">Ignorados: ${f.excludes.length}</span>` : ""}</div></div><div class="folder-state"><span class="status" title="${esc(results.get(f.id)?.error || results.get(f.id)?.checked || "")}"><i></i>${esc(status(f))}</span><button class="settings" data-id="${esc(f.id)}" ${busy ? "disabled" : ""} aria-label="Configurar ${esc(f.local)}">Configurar ↗</button></div></article>`).join("") : '<div class="empty">Añade una carpeta para comenzar.</div>'}</section>
  <section class="protection"><span class="shield">◇</span><div><strong>Subidas con historial recuperable.</strong><p>Las eliminaciones automáticas aún están desactivadas.</p></div></section>
- <div class="actions"><span>${busy ? "Operación en curso…" : "Primero revisa los cambios; después decide qué subir."}</span>${busy ? '<button id="cancel" class="secondary">Cancelar</button>' : `<button id="review" class="primary">↻ Revisar cambios</button>`}</div></main><footer><span>${esc(runtime)}</span><span>Nubix 0.2</span></footer>`;
+ <div class="actions"><span>${busy ? "Operación en curso…" : "Primero revisa los cambios; después decide qué subir."}</span>${busy ? '<button id="cancel" class="secondary">Cancelar</button>' : `<button id="review" class="primary">↻ Revisar cambios</button>`}</div></main><footer><span>${esc(runtime)}</span><span>Nubix 0.2.1</span></footer>`;
+  document
+    .querySelector("#open-settings")
+    ?.addEventListener("click", () => openSettings());
   document
     .querySelector("#connect")!
     .addEventListener("click", () => connections());
@@ -290,16 +321,65 @@ function disconnectConfirm(id: string) {
     },
   );
 }
+async function openSettings() {
+  const d = dialog();
+  let appSettings: AppSettings = { close_to_tray: true, autostart: false };
+  if (isTauri()) {
+    try {
+      appSettings = await api.loadSettings();
+    } catch {
+      // conservar valores por defecto
+    }
+  }
+  d.innerHTML = `<form id="settings-form"><div class="dialog-title"><h2>Ajustes de Nubix</h2><button type="button" id="close" aria-label="Cerrar">✕</button></div>
+<div class="settings-section"><h3>Comportamiento de la ventana</h3><label class="settings-row"><input type="checkbox" name="close_to_tray" ${appSettings.close_to_tray ? "checked" : ""}><div class="settings-copy"><strong>Minimizar a la bandeja al pulsar ✕</strong><p>Al hacer clic en la ✕ de la ventana, Nubix continuará ejecutándose en segundo plano en el área de notificación de Windows.</p></div></label></div>
+<div class="settings-section"><h3>Inicio del sistema</h3><label class="settings-row"><input type="checkbox" name="autostart" ${appSettings.autostart ? "checked" : ""}><div class="settings-copy"><strong>Iniciar Nubix con Windows (Autorun)</strong><p>Arranca Nubix automáticamente en la bandeja del sistema al encender el equipo.</p></div></label></div>
+<div class="settings-section"><h3>Sistema y plataforma</h3><p class="form-note" style="margin:0 0 4px 0;"><strong>Versión:</strong> Nubix 0.2.1 · Tauri v2</p><p class="form-note" style="margin:0;"><strong>Motor Rclone:</strong> ${esc(runtime)}</p></div>
+<div class="dialog-actions"><button type="button" id="cancel-settings" class="secondary">Cancelar</button><button type="submit" class="primary">Guardar ajustes</button></div></form>`;
+  wireClose();
+  d.querySelector("#cancel-settings")?.addEventListener("click", () =>
+    d.close(),
+  );
+  const form = d.querySelector<HTMLFormElement>("#settings-form")!;
+  form.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const updated: AppSettings = {
+      close_to_tray: (
+        form.elements.namedItem("close_to_tray") as HTMLInputElement
+      ).checked,
+      autostart: (form.elements.namedItem("autostart") as HTMLInputElement)
+        .checked,
+    };
+    if (isTauri()) {
+      try {
+        await api.saveSettings(updated);
+        notice("Ajustes guardados correctamente.");
+      } catch (err) {
+        notice(failure(err));
+      }
+    } else {
+      notice("Ajustes guardados.");
+    }
+    d.close();
+  });
+  if (!d.open) d.showModal();
+}
 function edit(existing?: Folder) {
   const d = dialog(),
     a = account(existing?.accountId || selected) || accounts[0];
   let rootId = existing?.rootId || "",
     rootLabel = existing?.rootLabel || a?.root_label || "Mi unidad";
   d.innerHTML = `<form><div class="dialog-title"><h2>${existing ? "Configurar carpeta" : "Añadir carpeta"}</h2><button type="button" id="close" aria-label="Cerrar">✕</button></div><label>Carpeta en este equipo<div class="input-row"><input name="local" required value="${esc(existing?.local || "")}" placeholder="Selecciona una carpeta"><button type="button" id="browse">Explorar</button></div></label>
- <label>Cuenta<select name="accountId">${accounts.length ? accounts.map((x) => `<option value="${esc(x.id)}" ${x.id === a?.id ? "selected" : ""}>${esc(x.email || x.name)}</option>`).join("") : '<option value="">Conecta una cuenta primero</option>'}</select></label>
+ <label>Cuenta<div class="account-select-row"><select name="accountId">${accounts.length ? accounts.map((x) => `<option value="${esc(x.id)}" ${x.id === a?.id ? "selected" : ""}>${esc(x.email || x.name)}</option>`).join("") : '<option value="">Conecta una cuenta primero</option>'}</select>${accounts.length === 0 ? '<button type="button" id="quick-connect" class="secondary">Conectar…</button>' : ""}</div></label>
  <label>Guardar dentro de<div class="input-row"><input id="root-label" readonly value="${esc(rootLabel)}"><button type="button" id="drive-browse">Elegir en Drive</button></div></label><label>Subcarpeta de destino<input name="remote" required value="${esc(existing?.remote || "")}" placeholder="Imágenes/Mi carpeta"></label><p id="exact-destination" class="destination-preview"></p>
- <div class="form-grid"><label>Modo<select name="mode"><option value="mirror" ${existing?.mode !== "copy" ? "selected" : ""}>Espejo · PC → Drive</option><option value="copy" ${existing?.mode === "copy" ? "selected" : ""}>Copia · PC → Drive</option></select></label><label>Espera para eliminar<select name="days">${[1, 7, 14, 30, 90].map((n) => `<option value="${n}" ${(existing?.days || 7) === n ? "selected" : ""}>${n} ${n === 1 ? "día" : "días"}</option>`).join("")}</select></label></div><label class="check"><input type="checkbox" name="keep" ${existing?.keep ? "checked" : ""}> Conservar en Drive aunque lo borre del PC</label><p class="form-note">La ruta nueva se creará al subir. Las versiones reemplazadas se conservan en .Nubix-history. Las eliminaciones con espera aún no están activas.</p><div class="dialog-actions">${existing ? '<button type="button" id="remove" class="danger">Quitar de la lista</button>' : ""}<button type="submit" class="primary">Guardar carpeta</button></div></form><section id="drive-picker" hidden></section>`;
+ <div class="form-grid"><label>Modo<select name="mode"><option value="mirror" ${existing?.mode !== "copy" ? "selected" : ""}>Espejo · PC → Drive</option><option value="copy" ${existing?.mode === "copy" ? "selected" : ""}>Copia · PC → Drive</option></select></label><label>Espera para eliminar<select name="days">${[1, 7, 14, 30, 90].map((n) => `<option value="${n}" ${(existing?.days || 7) === n ? "selected" : ""}>${n} ${n === 1 ? "día" : "días"}</option>`).join("")}</select></label></div><label class="check"><input type="checkbox" name="keep" ${existing?.keep ? "checked" : ""}> Conservar en Drive aunque lo borre del PC</label>
+ <label>Nubix Ignore (lista negra estilo .gitignore)<textarea name="excludes" rows="3" placeholder="# Carpetas o formatos a ignorar (uno por línea)&#10;node_modules/&#10;target/&#10;*.png&#10;*.jpg">${esc((existing?.excludes || []).join("\n"))}</textarea><span class="field-hint">Sintaxis .gitignore: <code>carpeta/</code> para carpetas completas, <code>*.ext</code> para formatos de archivo, o archivo <code>.nubixignore</code>.</span></label>
+<p class="form-note">La ruta nueva se creará al subir. Las versiones reemplazadas se conservan en .Nubix-history. Las eliminaciones con espera aún no están activas.</p><div class="dialog-actions">${existing ? '<button type="button" id="remove" class="danger">Quitar de la lista</button>' : ""}<button type="submit" class="primary">Guardar carpeta</button></div></form><section id="drive-picker" hidden></section>`;
   wireClose();
+  d.querySelector("#quick-connect")?.addEventListener("click", () => {
+    d.close();
+    connections();
+  });
   const form = d.querySelector<HTMLFormElement>("form")!;
   const field = (name: string) =>
     form.elements.namedItem(name) as HTMLInputElement | HTMLSelectElement;
@@ -380,6 +460,12 @@ function edit(existing?: Folder) {
       notice("Escribe una subcarpeta relativa válida.");
       return;
     }
+    const excludesRaw =
+      (form.elements.namedItem("excludes") as HTMLTextAreaElement)?.value || "";
+    const excludes = excludesRaw
+      .split("\n")
+      .map((s) => s.trim())
+      .filter((s) => s.length > 0 && !s.startsWith("#"));
     const entry: Folder = {
       id: existing?.id || crypto.randomUUID(),
       local,
@@ -390,6 +476,7 @@ function edit(existing?: Folder) {
       mode: field("mode").value as Folder["mode"],
       days: Number(field("days").value),
       keep: (field("keep") as HTMLInputElement).checked,
+      excludes,
     };
     if (
       folders.some(
@@ -546,6 +633,7 @@ function showReview() {
 }
 render();
 if (isTauri()) {
+  listen("open-settings", () => openSettings()).catch(() => {});
   listen("operation-close-blocked", () =>
     notice("Cancela la operación en curso antes de cerrar Nubix."),
   ).catch(() => {});

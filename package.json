@@ -1,12 +1,13 @@
 {
   "name": "nubix",
   "private": true,
-  "version": "0.2.0",
+  "version": "0.2.1",
   "type": "module",
   "scripts": {
-    "dev": "tauri dev",
+    "dev": "vite",
     "dev:frontend": "vite",
     "dev:web": "vite",
+    "tauri:dev": "bun run tauri dev",
     "build": "tsc && vite build",
     "build:web": "tsc && vite build",
     "build:desktop": "tauri build --no-bundle",

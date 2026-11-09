@@ -52,7 +52,7 @@ pub struct Comparison {
     pub different: usize,
     pub errors: usize,
 }
-#[derive(Clone, Deserialize)]
+#[derive(Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Pair {
     pub local: String,
@@ -61,6 +61,26 @@ pub struct Pair {
     #[serde(default)]
     pub root_id: String,
     pub id: String,
+    #[serde(default)]
+    pub excludes: Vec<String>,
+}
+
+pub fn normalize_exclude(rule: &str) -> Vec<String> {
+    let r = rule.trim().replace('\\', "/");
+    if r.is_empty() || r.starts_with('#') {
+        return Vec::new();
+    }
+    if r.ends_with("/**") {
+        vec![r]
+    } else if let Some(stripped) = r.strip_suffix('/') {
+        vec![format!("{}/**", stripped)]
+    } else if !r.contains('*') && !r.contains('?') && !r.contains('.') {
+        // En sintaxis gitignore, un nombre sin extensión ni comodín
+        // (ej. "target", "node_modules", "build") excluye directorios y ficheros.
+        vec![r.clone(), format!("{}/**", r)]
+    } else {
+        vec![r]
+    }
 }
 
 fn command() -> Command {
@@ -501,6 +521,25 @@ fn pair_args(app: &AppHandle, pair: &Pair) -> Result<(PathBuf, Vec<String>), Str
     if !pair.root_id.is_empty() {
         common.extend(args(&["--drive-root-folder-id", &pair.root_id]));
     }
+    // 1. Exclusiones configuradas en la interfaz (Nubix Ignore)
+    for rule in &pair.excludes {
+        for pattern in normalize_exclude(rule) {
+            common.push("--exclude".into());
+            common.push(pattern);
+        }
+    }
+    // 2. Exclusiones de archivo .nubixignore en la raíz de la carpeta local (si existe)
+    let ignore_file = local.join(".nubixignore");
+    if ignore_file.is_file() {
+        if let Ok(content) = fs::read_to_string(&ignore_file) {
+            for line in content.lines() {
+                for pattern in normalize_exclude(line) {
+                    common.push("--exclude".into());
+                    common.push(pattern);
+                }
+            }
+        }
+    }
     Ok((config_path(app, &pair.account_id)?, common))
 }
 fn comparison(bytes: &[u8]) -> Comparison {
@@ -560,6 +599,18 @@ pub fn upload(app: &AppHandle, runtime: &CloudRuntime, pair: &Pair) -> Result<Co
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn test_normalize_exclude_rules() {
+        assert_eq!(normalize_exclude("node_modules/"), vec!["node_modules/**"]);
+        assert_eq!(normalize_exclude("target"), vec!["target", "target/**"]);
+        assert_eq!(normalize_exclude("*.png"), vec!["*.png"]);
+        assert_eq!(normalize_exclude("dist/**"), vec!["dist/**"]);
+        assert_eq!(normalize_exclude("# comentario"), Vec::<String>::new());
+        assert_eq!(normalize_exclude("   "), Vec::<String>::new());
+        assert_eq!(normalize_exclude("/build/"), vec!["/build/**"]);
+        assert_eq!(normalize_exclude("*.jpg"), vec!["*.jpg"]);
+    }
     #[test]
     fn reject_unsafe_destinations() {
         for s in [

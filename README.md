@@ -57,11 +57,12 @@ Las configuraciones de Rclone y sus tokens se guardan en `app_data_dir/cloud`, f
 
 Sin elegir otra carpeta raíz, `Imágenes/01_Branding` significa **Mi unidad / Imágenes / 01_Branding**. Si seleccionas una raíz existente, la subcarpeta se interpreta dentro de ella. Las nuevas rutas se crean al subir; la navegación y la simulación no crean carpetas en Drive. Si una conexión importada tiene raíz restringida o unidad compartida, la interfaz lo indica.
 
-## Pendiente
+## Roadmap y Pendiente
 
-Espejo con eliminaciones diferidas, conservación selectiva, restauración desde la interfaz, preparación y descarga en otro equipo, sincronización bidireccional y otros proveedores. Los ajustes de espera se conservan, pero aún no se aplican: todas las subidas actuales usan copia y no eliminan archivos exclusivos de Drive. La subida inicial muestra el progreso real de Rclone; la programación recurrente sigue pendiente.
-
-La espera debe contar desde la primera detección válida y guardar un registro persistente. No se implementa con `--delete-after`. Antes de permitir eliminaciones deben comprobarse disco/origen, identidad del destino, cambios masivos y preparación del equipo. No ejecutar espejos simultáneos desde dos equipos contra el mismo destino.
+- **Flujo de autenticación directa de Google**: Inicio de sesión integrado directo para usuarios finales sin requerir creación ni gestión de proyecto propio en Google Cloud Console.
+- **Soporte multiplataforma y Android**: Preparación y compilación para versión APK de Android y arquitecturas de escritorio adicionales.
+- **Motor de sincronización avanzado**: Espejo con eliminaciones diferidas verificadas, conservación selectiva, restauración desde la interfaz, preparación y descarga en otro equipo y programación recurrente.
+- **Validaciones de seguridad previas a eliminaciones**: Comprobación rigurosa de origen físico, identidad inequívoca de destino y registro persistente de períodos de espera.
 
 ## Desarrollo y validación
 
